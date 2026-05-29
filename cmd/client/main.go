@@ -29,20 +29,19 @@ func main() {
 		log.Fatalf("Error welcoming client: %v", err)
 	}
 
-	_, queue, err := pubsub.DeclareAndBind(
+	gameState := gamelogic.NewGameState(name)
+
+	err = pubsub.SubscribeJSON(
 		conn,
 		routing.ExchangePerilDirect,
 		routing.PauseKey+"."+name,
 		routing.PauseKey,
 		pubsub.SimpleQueueTransient,
+		handlerPause(gameState),
 	)
 	if err != nil {
 		log.Fatalf("Error in declare and bind: %v", err)
 	}
-
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
-
-	gameState := gamelogic.NewGameState(name)
 
 	for {
 		userInput := gamelogic.GetInput()
@@ -80,4 +79,11 @@ func main() {
 		}
 	}
 
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
+		gs.HandlePause(ps)
+	}
 }

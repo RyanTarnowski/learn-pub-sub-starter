@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -44,10 +42,42 @@ func main() {
 
 	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
-	// wait for ctrl+c
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	sig := <-signalChan
+	gameState := gamelogic.NewGameState(name)
 
-	fmt.Printf("\nReceived signal: %s. Exiting...\n", sig)
+	for {
+		userInput := gamelogic.GetInput()
+		if len(userInput) == 0 {
+			continue
+		}
+		switch userInput[0] {
+		case "spawn":
+			fmt.Println("Spawning units")
+			err = gameState.CommandSpawn(userInput)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+		case "move":
+			fmt.Println("Moving Units")
+			_, err = gameState.CommandMove(userInput)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+		case "status":
+			fmt.Println("Status")
+			gameState.CommandStatus()
+		case "help":
+			fmt.Println("Help")
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("Spamming not allowed yet!")
+		case "quit":
+			fmt.Println("Goodbye")
+			return
+		default:
+			fmt.Println("Unknown command")
+		}
+	}
+
 }

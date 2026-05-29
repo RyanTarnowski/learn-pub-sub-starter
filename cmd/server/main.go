@@ -32,7 +32,6 @@ func main() {
 
 	gamelogic.PrintServerHelp()
 
-MainLoop:
 	for {
 		userInput := gamelogic.GetInput()
 		if len(userInput) == 0 {
@@ -67,7 +66,7 @@ MainLoop:
 			}
 		case "quit":
 			fmt.Println("Goodbye")
-			break MainLoop
+			return
 		case "help":
 			fmt.Println("help")
 			gamelogic.PrintServerHelp()
@@ -76,10 +75,4 @@ MainLoop:
 		}
 	}
 
-	// wait for ctrl+c
-	//signalChan := make(chan os.Signal, 1)
-	//signal.Notify(signalChan, os.Interrupt)
-	//sig := <-signalChan
-
-	//fmt.Printf("\nReceived signal: %s. Exiting...\n", sig)
 }

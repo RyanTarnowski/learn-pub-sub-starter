@@ -103,6 +103,60 @@ func SubscribeJSON[T any](
 	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
 	handler func(T) AckType,
 ) error {
+
+	unmarshaller := func(data []byte) (T, error) {
+		var target T
+		err := json.Unmarshal(data, &target)
+		return target, err
+	}
+
+	return subscribe(
+		conn,
+		exchange,
+		queueName,
+		key,
+		queueType,
+		handler,
+		unmarshaller,
+	)
+}
+
+func SubscribeGob[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
+	handler func(T) AckType,
+) error {
+
+	unmarshaller := func(data []byte) (T, error) {
+		dec := gob.NewDecoder(bytes.NewBuffer(data))
+		var target T
+		err := dec.Decode(&target)
+		return target, err
+	}
+
+	return subscribe(
+		conn,
+		exchange,
+		queueName,
+		key,
+		queueType,
+		handler,
+		unmarshaller,
+	)
+}
+
+func subscribe[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+	handler func(T) AckType,
+	unmarshaller func([]byte) (T, error),
+) error {
 	channel, queue, err := DeclareAndBind(
 		conn,
 		exchange,
@@ -125,12 +179,6 @@ func SubscribeJSON[T any](
 	)
 	if err != nil {
 		return err
-	}
-
-	unmarshaller := func(data []byte) (T, error) {
-		var target T
-		err := json.Unmarshal(data, &target)
-		return target, err
 	}
 
 	go func() {

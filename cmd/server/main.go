@@ -30,17 +30,17 @@ func main() {
 		log.Fatalf("Error opening new channel %v", err)
 	}
 
-	_, queue, err := pubsub.DeclareAndBind(
+	err = pubsub.SubscribeGob(
 		conn,
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
 		routing.GameLogSlug+".*",
 		pubsub.SimpleQueueDurable,
+		handlerWriteLog(),
 	)
 	if err != nil {
-		log.Fatalf("Error in declare and bind: %v", err)
+		log.Fatalf("Error subscribing to game log queue: %v", err)
 	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
 	gamelogic.PrintServerHelp()
 
@@ -87,4 +87,17 @@ func main() {
 		}
 	}
 
+}
+
+func handlerWriteLog() func(routing.GameLog) pubsub.AckType {
+	return func(gl routing.GameLog) pubsub.AckType {
+		defer fmt.Print("> ")
+
+		err := gamelogic.WriteLog(gl)
+		if err != nil {
+			fmt.Printf("error writing log: %v\n", err)
+			return pubsub.NackRequeue
+		}
+		return pubsub.Ack
+	}
 }
